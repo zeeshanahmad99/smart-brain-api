@@ -79,6 +79,10 @@ app.put('/image', (req, res) => {
     })
 })
 
-app.listen(3001, () => {
-    console.log('server started at port 3000');
-})
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
+    console.log(`server started at port ${PORT}`);
+});
+
+console.log(PORT);
