@@ -37,7 +37,7 @@ app.post('/signin', (req, res) => {
 
 const storeEmailAndHash = (email, password) => {
     bcrypt.hash(password, 10, function(err, hash) {
-        db('login').insert({hash, email}).then(data => console.log('storeEmailAndHash', data));
+        db('login').insert({hash, email}).then(login => null);
     });
 }
 
@@ -46,11 +46,10 @@ app.post('/register', (req, res) => {
 
     storeEmailAndHash(email, password);
 
-    db('users').insert({name, email, joined: new Date()}).then(idArray => {
-        const id = idArray[0];
-        console.log('inside register',id);
-        db('users').where({id}).select('*').then(userArray => res.json(userArray[0]));
-    })
+    db('users')
+     .returning('*')
+     .insert({name, email, joined: new Date()})
+     .then(users => res.json(users[0]));
 })
 
 
@@ -66,7 +65,6 @@ app.put('/image', (req, res) => {
     const {id} = req.body;
     db('users').where({id}).select('*').then(userArray => {
         const user = userArray[0];
-        console.log({user});
         if(user) {
             db('users').where('id', user.id).update({entries: ++user.entries}).then(data => {
                 db('users').where({id: user.id}).select('*').then(userArray => res.send(userArray[0]));
@@ -82,5 +80,3 @@ const PORT = process.env.PORT;
 app.listen(PORT || 3000, () => {
     console.log(`server started at port ${PORT}`);
 });
-
-console.log(PORT);
