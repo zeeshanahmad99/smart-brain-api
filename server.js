@@ -5,12 +5,10 @@ const cors = require('cors');
 const knex = require('knex');
 
 const db = knex({
-    client: 'mysql',
+    client: 'pg',
     connection: {
-        host: '127.0.0.1',
-        user: 'root',
-        password: 'password',
-        database: 'smart_brain'
+        host: process.env.DATABASE_URL,
+        ssl: true
     }
 }) 
 
@@ -19,13 +17,9 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors())
 
-// app.get('/', (req, res) => {
-//     db.select('*').from('users').then(data => res.send(data));
-// })
-
 app.get('/', (req, res) => {
-    res.send('its working');
-});
+    db.select('*').from('users').then(data => res.send(data));
+})
 
 app.post('/signin', (req, res) => {
     const {email, password} = req.body;
