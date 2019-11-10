@@ -19,9 +19,13 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors())
 
+// app.get('/', (req, res) => {
+//     db.select('*').from('users').then(data => res.send(data));
+// })
+
 app.get('/', (req, res) => {
-    db.select('*').from('users').then(data => res.send(data));
-})
+    res.send('its working');
+});
 
 app.post('/signin', (req, res) => {
     const {email, password} = req.body;
