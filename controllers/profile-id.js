@@ -1,4 +1,4 @@
-const handleProfileId = (req, res, db) => {
+const handleProfileId = db => (req, res) => {
   const { id } = req.params;
   db("users")
     .where({ id })

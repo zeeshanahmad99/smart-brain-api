@@ -25,13 +25,15 @@ app.use(cors());
 
 app.get("/", root.handleRoot);
 
-app.post("/signin", (req, res) => signIn.handleSignIn(req, res, db, bcrypt));
+app.post("/signin", signIn.handleSignIn(db, bcrypt));
 
-app.post("/register", (req, res) => register.handleRegister(req, res, db, bcrypt));
+app.post("/register", register.handleRegister(db, bcrypt));
 
-app.get("/profile/:id", (req, res) => profileId.handleProfileId(req, res, db));
+app.get("/profile/:id", profileId.handleProfileId(db));
 
-app.put("/image", (req, res) => image.handleImage(req, res, db));
+app.put("/image", image.handleImage(db));
+
+app.post('/clarifai', image.handleClarifaiCall);
 
 const PORT = process.env.PORT;
 
