@@ -1,82 +1,103 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
-const cors = require('cors');
-const knex = require('knex');
+const express = require("express");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
+const cors = require("cors");
+const knex = require("knex");
 
 const db = knex({
-    client: 'pg',
-    connection: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: true
-    }
-}) 
+  client: "pg",
+  connection: {
+    host: "127.0.0.1",
+    user: "postgres",
+    password: "admin",
+    database: "smart_brain"
+  }
+});
 
 const app = express();
 
 app.use(bodyParser.json());
-app.use(cors())
+app.use(cors());
 
-app.get('/', (req, res) => {
-    db.select('*').from('users').then(data => res.send(data));
-})
+app.get("/", (req, res) => {
+  db.select("*")
+    .from("users")
+    .then(data => res.send(data));
+});
 
-app.post('/signin', (req, res) => {
-    const {email, password} = req.body;
-    db('login').where({email}).select('*').then(loginArray => {
-        const loginInfo = loginArray[0];
-        loginInfo
-        ? bcrypt.compare(password, loginInfo.hash, function(err, data) {
-            err || !data
-            ? res.status(400).json('error logging in')
-            : db('users').where({email}).select('*').then(userArray => res.json(userArray[0]));
-        })
-        : res.status(400).json('error logging in');
+app.post("/signin", (req, res) => {
+  const { email, password } = req.body;
+
+  db.select("*")
+    .from("login")
+    .where({ email })
+    .then(login => {
+      const isValid = bcrypt.compareSync(password, login[0].hash);
+      if (isValid) {
+        return db
+          .select("*")
+          .from("users")
+          .where({ email })
+          .then(users => res.json(users[0]))
+          .catch(err => res.status(400).json("unable to get user"));
+      } else {
+        throw Error();
+      }
     })
-})
+    .catch(err => res.status(400).json("wrong credentials"));
+});
 
-const storeEmailAndHash = (email, password) => {
-    bcrypt.hash(password, 10, function(err, hash) {
-        db('login').insert({hash, email}).then(login => null);
-    });
-}
+app.post("/register", (req, res) => {
+  const { name, email, password } = req.body;
 
-app.post('/register', (req, res) => {
-    const {name, email, password} = req.body;
+  let hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 
-    storeEmailAndHash(email, password);
+  db.transaction(trx => {
+    trx
+      .returning("email")
+      .insert({ hash, email })
+      .into("login")
+      .then(loginEmail => {
+        return trx
+          .returning("*")
+          .insert({ name, email: loginEmail[0], joined: new Date() })
+          .into("users")
+          .then(users => res.json(users[0]));
+      })
+      .then(trx.commit)
+      .catch(trx.rollback);
+  }).catch(err => res.status(400).json("unable to register"));
+});
 
-    db('users')
-     .returning('*')
-     .insert({name, email, joined: new Date()})
-     .then(users => res.json(users[0]));
-})
-
-
-app.get('/profile/:id', (req, res) => {
-    const {id} = req.params;
-    db('users').where({id}).select('*').then(userArray => {
-        const user = userArray[0];
-        user ? res.send(user) : res.status(404).json("user not found");
+app.get("/profile/:id", (req, res) => {
+  const { id } = req.params;
+  db("users")
+    .where({ id })
+    .select("*")
+    .then(userArray => {
+      const user = userArray[0];
+      user ? res.send(user) : res.status(404).json("user not found");
     })
-})
+    .catch(err => res.status(400).json("error getting user"));
+});
 
-app.put('/image', (req, res) => {
-    const {id} = req.body;
-    db('users').where({id}).select('*').then(userArray => {
-        const user = userArray[0];
-        if(user) {
-            db('users').where('id', user.id).update({entries: ++user.entries}).then(data => {
-                db('users').where({id: user.id}).select('*').then(userArray => res.send(userArray[0]));
-            })
-        } else {
-            res.status(404).json('no such user');
-        }
+app.put("/image", (req, res) => {
+  const { id } = req.body;
+  db("users")
+    .where("id", "=", id)
+    .increment("entries", 1)
+    .returning("*")
+    .then(users => {
+      const user = users[0];
+      return user ? res.json(user) : res.status(400).json("user not found");
     })
-})
+    .catch(err =>
+      res.status(400).json("unable to get entries or user not found")
+    );
+});
 
 const PORT = process.env.PORT;
 
-app.listen(PORT || 3000, () => {
-    console.log(`server started at port ${PORT}`);
+app.listen(3000, () => {
+  console.log(`server started at port 3000`);
 });
