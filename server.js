@@ -7,10 +7,8 @@ const knex = require("knex");
 const db = knex({
   client: "pg",
   connection: {
-    host: "127.0.0.1",
-    user: "postgres",
-    password: "admin",
-    database: "smart_brain"
+    connectionString: process.env.DATABASE_URL,
+    ssl: true
   }
 });
 
@@ -98,6 +96,6 @@ app.put("/image", (req, res) => {
 
 const PORT = process.env.PORT;
 
-app.listen(3000, () => {
-  console.log(`server started at port 3000`);
+app.listen(PORT || 3000, () => {
+  console.log(`server started at port ${PORT}`);
 });
