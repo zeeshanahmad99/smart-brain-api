@@ -23,7 +23,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.get("/", root.handleRoot);
+app.get("/", root.handleRoot(db));
 
 app.post("/signin", signIn.handleSignIn(db, bcrypt));
 
