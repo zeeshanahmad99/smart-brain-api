@@ -1,4 +1,4 @@
-const handleRoot = (req, res) => {
+const handleRoot = db => (req, res) => {
   db.select("*")
     .from("users")
     .then(data => res.send(data));
